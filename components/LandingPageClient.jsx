@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useMemo, useState } from "react";
 
@@ -49,7 +50,7 @@ function WhatsAppIcon() {
   );
 }
 
-function ServiceDetailsModal({ service, onClose }) {
+function ServiceDetailsModal({ service, onClose, onBookService }) {
   if (!service) return null;
 
   return (
@@ -88,6 +89,23 @@ function ServiceDetailsModal({ service, onClose }) {
             <p className="text-lg font-semibold text-[#4A1942]">{service.category || "Salon"}</p>
           </div>
         </div>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => onBookService(service)}
+            className="rounded-full bg-[#C9A84C] px-5 py-2.5 text-sm font-semibold text-[#4A1942] transition hover:bg-[#E8D5A3]"
+          >
+            Book Service
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-[#C9A84C]/60 px-5 py-2.5 text-sm font-semibold text-[#4A1942] transition hover:bg-white"
+          >
+            Continue Browsing
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -95,6 +113,7 @@ function ServiceDetailsModal({ service, onClose }) {
 
 export default function LandingPageClient({ services = [] }) {
   const { status } = useSession();
+  const router = useRouter();
   const isAuthenticated = status === "authenticated";
   const [selectedService, setSelectedService] = useState(null);
   const [authMessage, setAuthMessage] = useState("");
@@ -108,6 +127,11 @@ export default function LandingPageClient({ services = [] }) {
     }
     setAuthMessage("");
     setSelectedService(service);
+  }
+
+  function handleBookService(service) {
+    setSelectedService(null);
+    router.push(`/booking?serviceId=${service.id}`);
   }
 
   return (
@@ -280,7 +304,11 @@ export default function LandingPageClient({ services = [] }) {
         </p>
       </footer>
 
-      <ServiceDetailsModal service={selectedService} onClose={() => setSelectedService(null)} />
+      <ServiceDetailsModal
+        service={selectedService}
+        onClose={() => setSelectedService(null)}
+        onBookService={handleBookService}
+      />
     </main>
   );
 }

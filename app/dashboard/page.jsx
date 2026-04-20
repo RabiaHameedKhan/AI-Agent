@@ -5,11 +5,15 @@ import { authOptions } from "@/lib/auth";
 import db from "@/lib/db";
 import BookingsList from "./BookingsList";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect("/signin");
   }
+
+  const params = await searchParams;
+  const bookingConfirmed = params?.booking === "confirmed";
+  const confirmedServiceName = params?.service || "";
 
   const bookings = db
     .prepare(
@@ -46,6 +50,15 @@ export default async function DashboardPage() {
             </Link>
           </div>
         </header>
+
+        {bookingConfirmed && (
+          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm">
+            <p className="text-sm font-semibold">Booking confirmed</p>
+            <p className="mt-1 text-sm">
+              {confirmedServiceName || "Your service"} has been saved and is now visible in your dashboard.
+            </p>
+          </div>
+        )}
 
         <BookingsList initialBookings={bookings} />
       </div>
