@@ -2,8 +2,12 @@
 
 import { useMemo, useState } from "react";
 
-function getBookingDateTime(booking) {
-  return new Date(`${booking.appointment_date}T${booking.appointment_time}`);
+function getTodayDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function statusClasses(status) {
@@ -13,7 +17,45 @@ function statusClasses(status) {
   return "bg-emerald-100 text-emerald-700";
 }
 
-function BookingCard({ booking, showCancel, onCancel, isCancelling }) {
+function CancelConfirmationModal({ booking, onClose, onConfirm, isCancelling }) {
+  if (!booking) return null;
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4">
+      <div className="w-full max-w-md rounded-3xl border border-[#C9A84C]/50 bg-[#FDFAF5] p-6 shadow-2xl">
+        <p className="text-xs uppercase tracking-[0.25em] text-red-600">Confirm Cancellation</p>
+        <h3 className="mt-2 text-3xl text-[#4A1942] [font-family:var(--font-cormorant)]">
+          Cancel this booking?
+        </h3>
+        <p className="mt-3 text-sm leading-6 text-[#2C2C2C]/80">
+          {booking.service_name} on {booking.appointment_date} at {booking.appointment_time} will be
+          moved out of your upcoming bookings.
+        </p>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isCancelling}
+            className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isCancelling ? "Cancelling..." : "Yes, Cancel Booking"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isCancelling}
+            className="rounded-full border border-[#C9A84C]/60 px-5 py-2.5 text-sm font-semibold text-[#4A1942] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            Keep Booking
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BookingCard({ booking, showCancel, onCancelClick, isCancelling }) {
   return (
     <article className="rounded-2xl border border-[#C9A84C]/50 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -30,14 +72,17 @@ function BookingCard({ booking, showCancel, onCancel, isCancelling }) {
         </span>
       </div>
       {showCancel && (
-        <button
-          type="button"
-          onClick={() => onCancel(booking.id)}
-          disabled={isCancelling}
-          className="mt-4 rounded-full border border-red-300 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isCancelling ? "Cancelling..." : "Cancel"}
-        </button>
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onCancelClick(booking)}
+            disabled={isCancelling}
+            className="rounded-full border border-red-300 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isCancelling ? "Cancelling..." : "Cancel Booking"}
+          </button>
+          <p className="text-xs text-[#2C2C2C]/60">You can cancel any upcoming booking.</p>
+        </div>
       )}
     </article>
   );
@@ -46,15 +91,18 @@ function BookingCard({ booking, showCancel, onCancel, isCancelling }) {
 export default function BookingsList({ initialBookings }) {
   const [bookings, setBookings] = useState(initialBookings);
   const [cancellingId, setCancellingId] = useState(null);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [feedback, setFeedback] = useState("");
+  const [error, setError] = useState("");
 
   const { upcoming, past } = useMemo(() => {
-    const now = new Date();
+    const today = getTodayDateString();
     const upcomingItems = [];
     const pastItems = [];
 
     for (const booking of bookings) {
-      const bookingDate = getBookingDateTime(booking);
-      const isUpcoming = booking.status === "confirmed" && bookingDate >= now;
+      const isUpcoming =
+        booking.status === "confirmed" && booking.appointment_date >= today;
 
       if (isUpcoming) {
         upcomingItems.push(booking);
@@ -66,20 +114,37 @@ export default function BookingsList({ initialBookings }) {
     return { upcoming: upcomingItems, past: pastItems };
   }, [bookings]);
 
+  function openCancelModal(booking) {
+    setFeedback("");
+    setError("");
+    setBookingToCancel(booking);
+  }
+
+  function closeCancelModal() {
+    if (cancellingId) return;
+    setBookingToCancel(null);
+  }
+
   async function handleCancel(id) {
+    setFeedback("");
+    setError("");
     setCancellingId(id);
     try {
       const response = await fetch(`/api/bookings/${id}`, { method: "DELETE" });
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error("Failed to cancel booking.");
+        throw new Error(data?.error || "Failed to cancel booking.");
       }
       setBookings((current) =>
         current.map((booking) =>
           booking.id === id ? { ...booking, status: "cancelled" } : booking
         )
       );
+      setFeedback("Booking cancelled successfully.");
+      setBookingToCancel(null);
     } catch (error) {
       console.error(error);
+      setError(error.message || "Failed to cancel booking.");
     } finally {
       setCancellingId(null);
     }
@@ -87,6 +152,18 @@ export default function BookingsList({ initialBookings }) {
 
   return (
     <div className="space-y-10">
+      {(feedback || error) && (
+        <div
+          className={`rounded-2xl px-5 py-4 text-sm shadow-sm ${
+            error
+              ? "border border-red-200 bg-red-50 text-red-800"
+              : "border border-emerald-200 bg-emerald-50 text-emerald-900"
+          }`}
+        >
+          {error || feedback}
+        </div>
+      )}
+
       <section>
         <h2 className="mb-4 text-3xl text-[#4A1942] [font-family:var(--font-cormorant)]">Upcoming</h2>
         {upcoming.length === 0 ? (
@@ -98,7 +175,7 @@ export default function BookingsList({ initialBookings }) {
                 key={booking.id}
                 booking={booking}
                 showCancel={booking.status === "confirmed"}
-                onCancel={handleCancel}
+                onCancelClick={openCancelModal}
                 isCancelling={cancellingId === booking.id}
               />
             ))}
@@ -117,13 +194,20 @@ export default function BookingsList({ initialBookings }) {
                 key={booking.id}
                 booking={booking}
                 showCancel={false}
-                onCancel={handleCancel}
+                onCancelClick={openCancelModal}
                 isCancelling={false}
               />
             ))}
           </div>
         )}
       </section>
+
+      <CancelConfirmationModal
+        booking={bookingToCancel}
+        onClose={closeCancelModal}
+        onConfirm={() => bookingToCancel && handleCancel(bookingToCancel.id)}
+        isCancelling={cancellingId === bookingToCancel?.id}
+      />
     </div>
   );
 }

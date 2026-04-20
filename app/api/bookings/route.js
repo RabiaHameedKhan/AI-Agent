@@ -87,6 +87,18 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true, bookingId: result.lastInsertRowid }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: "Unable to create booking." }, { status: 500 });
+    console.error("Booking creation failed:", error);
+
+    if (error?.code === "SQLITE_BUSY") {
+      return NextResponse.json(
+        { error: "The booking system is busy right now. Please try again in a moment." },
+        { status: 503 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: error?.message || "Unable to create booking." },
+      { status: 500 }
+    );
   }
 }

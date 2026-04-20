@@ -3,12 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import db from "@/lib/db";
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const params = await context.params;
   const id = Number(params?.id);
   if (!Number.isInteger(id)) {
     return NextResponse.json({ error: "Invalid booking ID." }, { status: 400 });
