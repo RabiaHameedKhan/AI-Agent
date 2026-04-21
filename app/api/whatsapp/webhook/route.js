@@ -22,13 +22,13 @@ export async function POST(request) {
       });
     }
 
-    const user = getOrCreateWhatsAppUser(phoneNumber, profileName);
+    const user = await getOrCreateWhatsAppUser(phoneNumber, profileName);
 
     if (messageBody) {
-      saveMessage(phoneNumber, "user", messageBody);
+      await saveMessage(phoneNumber, "user", messageBody);
     }
 
-    const conversationHistory = getConversationHistory(phoneNumber, 20);
+    const conversationHistory = await getConversationHistory(phoneNumber, 20);
 
     const agentResponse = await runAgentLoop({
       phoneNumber,
@@ -36,7 +36,7 @@ export async function POST(request) {
       conversationHistory,
     });
 
-    saveMessage(phoneNumber, "assistant", agentResponse);
+    await saveMessage(phoneNumber, "assistant", agentResponse);
     await sendWhatsAppMessage(phoneNumber, agentResponse);
 
     return new Response("<Response></Response>", {

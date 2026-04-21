@@ -4,7 +4,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 
-export default function SignInForm({ callbackUrl, queryError }) {
+export default function SignInForm({ callbackUrl, queryError, googleEnabled }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -73,13 +73,15 @@ export default function SignInForm({ callbackUrl, queryError }) {
           </button>
         </form>
 
-        <button
-          type="button"
-          onClick={() => signIn("google", { callbackUrl })}
-          className="mt-3 w-full rounded-full border border-[#C9A84C]/55 bg-white px-4 py-2.5 text-sm font-semibold text-[#4A1942] transition hover:bg-[#F5ECD7]"
-        >
-          Continue with Google
-        </button>
+        {googleEnabled && (
+          <button
+            type="button"
+            onClick={() => signIn("google", { callbackUrl })}
+            className="mt-3 w-full rounded-full border border-[#C9A84C]/55 bg-white px-4 py-2.5 text-sm font-semibold text-[#4A1942] transition hover:bg-[#F5ECD7]"
+          >
+            Continue with Google
+          </button>
+        )}
 
         <p className="mt-5 text-center text-sm text-[#2C2C2C]/80">
           New here?{" "}

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import db from "@/lib/db";
+import db, { ensureDatabase } from "@/lib/db";
 
 async function requireAdminSession() {
   const session = await getServerSession(authOptions);
@@ -18,15 +18,13 @@ export async function GET() {
   const { error } = await requireAdminSession();
   if (error) return error;
 
-  const messages = db
-    .prepare(
-      `
-        SELECT id, phone_number, customer_name, content, is_read, created_at
-        FROM messages
-        ORDER BY datetime(created_at) DESC, id DESC
-      `
-    )
-    .all();
+  await ensureDatabase();
+
+  const messages = await db`
+    SELECT id, phone_number, customer_name, content, is_read, created_at
+    FROM messages
+    ORDER BY created_at DESC, id DESC
+  `;
 
   return NextResponse.json({ messages });
 }
@@ -36,14 +34,22 @@ export async function PATCH(request) {
   if (error) return error;
 
   try {
+    await ensureDatabase();
+
     const body = await request.json();
     const id = Number(body?.id);
     if (!Number.isInteger(id)) {
       return NextResponse.json({ error: "Invalid message ID." }, { status: 400 });
     }
 
-    const update = db.prepare("UPDATE messages SET is_read = 1 WHERE id = ?").run(id);
-    if (update.changes === 0) {
+    const updated = await db`
+      UPDATE messages
+      SET is_read = TRUE
+      WHERE id = ${id}
+      RETURNING id
+    `;
+
+    if (updated.length === 0) {
       return NextResponse.json({ error: "Message not found." }, { status: 404 });
     }
 

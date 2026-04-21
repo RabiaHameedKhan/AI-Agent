@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:setup": "node scripts/setup-neon.mjs",
+    "db:migrate:sqlite": "node scripts/migrate-sqlite-to-neon.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
@@ -14,6 +16,7 @@
     "better-sqlite3": "^12.9.0",
     "next": "16.2.4",
     "next-auth": "^4.24.14",
+    "postgres": "^3.4.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "twilio": "^6.0.0"

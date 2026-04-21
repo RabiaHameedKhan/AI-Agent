@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import db from "@/lib/db";
+import db, { ensureDatabase } from "@/lib/db";
 
 export async function GET(request) {
   const session = await getServerSession(authOptions);
@@ -13,34 +13,35 @@ export async function GET(request) {
   const scope = searchParams.get("scope");
   const sort = searchParams.get("sort") === "desc" ? "DESC" : "ASC";
 
+  await ensureDatabase();
+
   if (scope === "all") {
     if (session.user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const bookings = db
-      .prepare(
-        `
-          SELECT id, phone_number, customer_name, user_id, service_name, appointment_date, appointment_time, status, notes, created_at
-          FROM bookings
-          ORDER BY appointment_date ${sort}, appointment_time ${sort}
-        `
-      )
-      .all();
+    const bookings =
+      sort === "DESC"
+        ? await db`
+            SELECT id, phone_number, customer_name, user_id, service_name, appointment_date, appointment_time, status, notes, created_at
+            FROM bookings
+            ORDER BY appointment_date DESC, appointment_time DESC
+          `
+        : await db`
+            SELECT id, phone_number, customer_name, user_id, service_name, appointment_date, appointment_time, status, notes, created_at
+            FROM bookings
+            ORDER BY appointment_date ASC, appointment_time ASC
+          `;
 
     return NextResponse.json({ bookings });
   }
 
-  const bookings = db
-    .prepare(
-      `
-        SELECT id, phone_number, customer_name, user_id, service_name, appointment_date, appointment_time, status, notes, created_at
-        FROM bookings
-        WHERE user_id = ?
-        ORDER BY appointment_date ASC, appointment_time ASC
-      `
-    )
-    .all(session.user.id);
+  const bookings = await db`
+    SELECT id, phone_number, customer_name, user_id, service_name, appointment_date, appointment_time, status, notes, created_at
+    FROM bookings
+    WHERE user_id = ${session.user.id}
+    ORDER BY appointment_date ASC, appointment_time ASC
+  `;
 
   return NextResponse.json({ bookings });
 }
@@ -52,6 +53,8 @@ export async function POST(request) {
   }
 
   try {
+    await ensureDatabase();
+
     const body = await request.json();
     const serviceName = body?.service_name?.trim();
     const appointmentDate = body?.appointment_date?.trim();
@@ -67,34 +70,25 @@ export async function POST(request) {
       );
     }
 
-    const result = db
-      .prepare(
-        `
-          INSERT INTO bookings (
-            phone_number, customer_name, user_id, service_name, appointment_date, appointment_time, status, notes
-          ) VALUES (?, ?, ?, ?, ?, ?, 'confirmed', ?)
-        `
+    const [result] = await db`
+      INSERT INTO bookings (
+        phone_number, customer_name, user_id, service_name, appointment_date, appointment_time, status, notes
+      ) VALUES (
+        ${phoneNumber},
+        ${customerName},
+        ${session.user.id},
+        ${serviceName},
+        ${appointmentDate},
+        ${appointmentTime},
+        'confirmed',
+        ${notes}
       )
-      .run(
-        phoneNumber,
-        customerName,
-        session.user.id,
-        serviceName,
-        appointmentDate,
-        appointmentTime,
-        notes
-      );
+      RETURNING id
+    `;
 
-    return NextResponse.json({ success: true, bookingId: result.lastInsertRowid }, { status: 201 });
+    return NextResponse.json({ success: true, bookingId: result.id }, { status: 201 });
   } catch (error) {
     console.error("Booking creation failed:", error);
-
-    if (error?.code === "SQLITE_BUSY") {
-      return NextResponse.json(
-        { error: "The booking system is busy right now. Please try again in a moment." },
-        { status: 503 }
-      );
-    }
 
     return NextResponse.json(
       { error: error?.message || "Unable to create booking." },

@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { authOptions } from "@/lib/auth";
-import db from "@/lib/db";
+import db, { ensureDatabase } from "@/lib/db";
 import BookingsList from "./BookingsList";
 
 export default async function DashboardPage({ searchParams }) {
@@ -15,16 +15,14 @@ export default async function DashboardPage({ searchParams }) {
   const bookingConfirmed = params?.booking === "confirmed";
   const confirmedServiceName = params?.service || "";
 
-  const bookings = db
-    .prepare(
-      `
-        SELECT id, service_name, appointment_date, appointment_time, status
-        FROM bookings
-        WHERE user_id = ?
-        ORDER BY appointment_date ASC, appointment_time ASC
-      `
-    )
-    .all(session.user.id);
+  await ensureDatabase();
+
+  const bookings = await db`
+    SELECT id, service_name, appointment_date, appointment_time, status
+    FROM bookings
+    WHERE user_id = ${session.user.id}
+    ORDER BY appointment_date ASC, appointment_time ASC
+  `;
 
   return (
     <main className="min-h-screen bg-[#FDFAF5] px-4 py-10 sm:px-6 lg:px-8">

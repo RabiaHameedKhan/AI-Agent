@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
+import db, { ensureDatabase } from "@/lib/db";
 
 export async function POST(request) {
   try {
+    await ensureDatabase();
+
     const body = await request.json();
     const name = body?.name?.trim();
     const phone = body?.phone?.trim();
@@ -15,12 +17,10 @@ export async function POST(request) {
       );
     }
 
-    db.prepare(
-      `
-        INSERT INTO messages (phone_number, customer_name, content, is_read)
-        VALUES (?, ?, ?, 0)
-      `
-    ).run(phone, name, message);
+    await db`
+      INSERT INTO messages (phone_number, customer_name, content, is_read)
+      VALUES (${phone}, ${name}, ${message}, ${false})
+    `;
 
     return NextResponse.json({ success: true });
   } catch (error) {

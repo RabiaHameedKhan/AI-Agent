@@ -111,6 +111,46 @@ function ServiceDetailsModal({ service, onClose, onBookService }) {
   );
 }
 
+function AuthPrompt({ message, onDismiss }) {
+  if (!message) return null;
+
+  return (
+    <div className="fixed inset-x-4 bottom-4 z-[70] sm:inset-x-auto sm:right-6 sm:top-24 sm:bottom-auto sm:w-full sm:max-w-sm">
+      <div className="rounded-2xl border border-[#C9A84C]/60 bg-[#FDFAF5] p-4 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#C9A84C]">Sign in required</p>
+            <p className="mt-2 text-sm text-[#4A1942]">{message}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="rounded-full border border-[#C9A84C]/60 px-2.5 py-1 text-xs font-semibold text-[#4A1942]"
+            aria-label="Dismiss sign in prompt"
+          >
+            Close
+          </button>
+        </div>
+        <div className="mt-4 flex gap-3">
+          <Link
+            href="/signin?callbackUrl=%2F%23services"
+            className="inline-flex rounded-full bg-[#C9A84C] px-4 py-2 text-sm font-semibold text-[#4A1942] transition hover:bg-[#E8D5A3]"
+          >
+            Sign in
+          </Link>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="rounded-full border border-[#C9A84C]/60 px-4 py-2 text-sm font-semibold text-[#4A1942] transition hover:bg-white"
+          >
+            Maybe later
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPageClient({ services = [] }) {
   const { status } = useSession();
   const router = useRouter();
@@ -169,15 +209,6 @@ export default function LandingPageClient({ services = [] }) {
           <h2 className="mb-10 text-center text-4xl text-[#4A1942] [font-family:var(--font-cormorant)] sm:text-5xl">
             Our Services
           </h2>
-
-          {authMessage && (
-            <p className="mb-6 text-center text-sm text-[#4A1942]">
-              {authMessage}{" "}
-              <Link href="/signin?callbackUrl=%2F%23services" className="font-semibold text-[#7B3F74] underline">
-                Sign in
-              </Link>
-            </p>
-          )}
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {serviceCards.map((service) => (
@@ -309,6 +340,7 @@ export default function LandingPageClient({ services = [] }) {
         onClose={() => setSelectedService(null)}
         onBookService={handleBookService}
       />
+      <AuthPrompt message={authMessage} onDismiss={() => setAuthMessage("")} />
     </main>
   );
 }

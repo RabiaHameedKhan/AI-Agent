@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect, notFound } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import db from "@/lib/db";
+import db, { ensureDatabase } from "@/lib/db";
 import BookingForm from "./BookingForm";
 
 export default async function BookingPage({ searchParams }) {
@@ -17,15 +17,14 @@ export default async function BookingPage({ searchParams }) {
     redirect(`/signin?callbackUrl=${encodeURIComponent(`/booking?serviceId=${serviceId}`)}`);
   }
 
-  const service = db
-    .prepare(
-      `
-        SELECT id, name, description, duration_minutes, price, category
-        FROM services
-        WHERE id = ?
-      `
-    )
-    .get(serviceId);
+  await ensureDatabase();
+
+  const [service] = await db`
+    SELECT id, name, description, duration_minutes, price, category
+    FROM services
+    WHERE id = ${serviceId}
+    LIMIT 1
+  `;
 
   if (!service) {
     notFound();
