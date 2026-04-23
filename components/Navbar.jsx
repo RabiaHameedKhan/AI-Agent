@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useState } from "react";
+import { getWhatsAppHref } from "@/lib/whatsapp-link";
 
 const publicLinks = [
   { label: "Home", href: "/" },
@@ -16,6 +17,7 @@ export default function Navbar() {
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isAdmin = session?.user?.role === "admin";
+  const whatsappHref = getWhatsAppHref("Hello, I would like to book an appointment.");
 
   const authLinks = [
     { label: "Dashboard", href: "/dashboard" },
@@ -60,7 +62,7 @@ export default function Navbar() {
 
         <div className="hidden items-center gap-3 md:flex">
           <a
-            href="https://wa.me/923001234567"
+            href={whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-full bg-[#C9A84C] px-4 py-2 text-sm font-semibold text-[#4A1942] transition hover:bg-[#E8D5A3]"
@@ -133,7 +135,7 @@ export default function Navbar() {
             ))}
 
           <a
-            href="https://wa.me/923001234567"
+            href={whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-2 block rounded-lg bg-[#C9A84C] px-3 py-2 text-center font-semibold text-[#4A1942]"

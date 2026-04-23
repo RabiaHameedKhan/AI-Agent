@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useMemo, useState } from "react";
+import { getWhatsAppHref, getWhatsAppNumber } from "@/lib/whatsapp-link";
 
 const testimonials = [
   {
@@ -157,6 +158,8 @@ export default function LandingPageClient({ services = [] }) {
   const isAuthenticated = status === "authenticated";
   const [selectedService, setSelectedService] = useState(null);
   const [authMessage, setAuthMessage] = useState("");
+  const whatsappHref = getWhatsAppHref("Hello, I would like to learn more about your services.");
+  const whatsappNumber = getWhatsAppNumber();
 
   const serviceCards = useMemo(() => services, [services]);
 
@@ -193,7 +196,7 @@ export default function LandingPageClient({ services = [] }) {
             Elevated beauty rituals, timeless elegance, and personalized care for your signature look.
           </p>
           <a
-            href="https://wa.me/923001234567"
+            href={whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-10 inline-flex items-center gap-2 rounded-full bg-[#C9A84C] px-7 py-3 text-sm font-semibold tracking-wide text-[#4A1942] transition hover:bg-[#E8D5A3]"
@@ -313,12 +316,12 @@ export default function LandingPageClient({ services = [] }) {
           <div>
             <h4 className="font-semibold uppercase tracking-wider text-[#E8D5A3]">Connect</h4>
             <a
-              href="https://wa.me/923001234567"
+              href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-3 block text-sm hover:text-[#E8D5A3]"
             >
-              WhatsApp
+              WhatsApp: {whatsappNumber}
             </a>
             <a
               href="https://instagram.com/YOUR_HANDLE"

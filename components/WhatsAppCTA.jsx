@@ -1,7 +1,9 @@
+import { getWhatsAppHref } from "@/lib/whatsapp-link";
+
 export default function WhatsAppCTA() {
   return (
     <a
-      href="https://wa.me/923001234567"
+      href={getWhatsAppHref("Hello, I would like to inquire about salon services.")}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp"

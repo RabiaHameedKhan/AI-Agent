@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import { getWhatsAppHref, getWhatsAppNumber } from "@/lib/whatsapp-link";
 import ContactForm from "./ContactForm";
 
 export default async function ContactPage() {
@@ -8,6 +9,9 @@ export default async function ContactPage() {
   if (!session?.user?.id) {
     redirect("/signin");
   }
+
+  const whatsappNumber = getWhatsAppNumber();
+  const whatsappHref = getWhatsAppHref("Hello, I would like to contact Lumiere Salon.");
 
   return (
     <main className="min-h-screen bg-[#FDFAF5] px-4 py-12 sm:px-6 lg:px-8">
@@ -22,8 +26,8 @@ export default async function ContactPage() {
           <div className="mt-8 space-y-3 text-sm">
             <p>Hours: Mon-Sat 9am-7pm</p>
             <p>Address: 123 Beauty Lane</p>
-            <a href="https://wa.me/923001234567" className="block underline decoration-[#C9A84C]/70 underline-offset-4">
-              WhatsApp: +92 300 1234567
+            <a href={whatsappHref} className="block underline decoration-[#C9A84C]/70 underline-offset-4">
+              WhatsApp: {whatsappNumber}
             </a>
             <a href="https://instagram.com/YOUR_HANDLE" className="block underline decoration-[#C9A84C]/70 underline-offset-4">
               Instagram: @lumieresalon
