@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -8,15 +9,15 @@ import { getWhatsAppHref, getWhatsAppNumber } from "@/lib/whatsapp-link";
 
 const testimonials = [
   {
-    name: "Hamna Khan",
+    name: "Emily",
     quote: "Every visit feels like a royal retreat. The team understood exactly what I wanted.",
   },
   {
-    name: "Aamna Hameed",
+    name: "Jessica Janson",
     quote: "Impeccable service, elegant ambiance, and truly premium results every single time.",
   },
   {
-    name: "Areeba Masooma",
+    name: "Sophia",
     quote: "From booking to styling, Lumiere makes everything effortless and luxurious.",
   },
 ];
@@ -42,6 +43,83 @@ const detailsByService = {
   Pedicure: "Includes foot soak, exfoliation, nail care, and relaxing massage.",
 };
 
+const imageByService = {
+  Haircut: {
+    src: "/services/haircut.jpg",
+    alt: "Professional haircut service photo",
+    accent: "from-[#F7E6D5] via-[#F3DDBB] to-[#E3BE86]",
+  },
+  "Hair Color": {
+    src: "/services/hair-color.jpg",
+    alt: "Professional hair color treatment photo",
+    accent: "from-[#F8E0D7] via-[#EBC9B8] to-[#D5938A]",
+  },
+  Blowout: {
+    src: "/services/blowout.jpg",
+    alt: "Professional blowout styling photo",
+    accent: "from-[#F4E4D3] via-[#E7D4B1] to-[#D4AE6C]",
+  },
+  Facial: {
+    src: "/services/facial.jpg",
+    alt: "Professional facial skincare service photo",
+    accent: "from-[#F7EEE7] via-[#EED8CB] to-[#DAB39A]",
+  },
+  Manicure: {
+    src: "/services/manicure.jpg",
+    alt: "Professional manicure service photo",
+    accent: "from-[#F8E1DE] via-[#EFC5C3] to-[#C9808D]",
+  },
+  Pedicure: {
+    src: "/services/pedicure.jpg",
+    alt: "Professional pedicure service photo",
+    accent: "from-[#F7E9DF] via-[#E8CCC3] to-[#D39B93]",
+  },
+};
+
+function getServiceVisual(service) {
+  return (
+    imageByService[service.name] || {
+      src: "/services/facial.jpg",
+      alt: `${service.name} service photo`,
+      accent: "from-[#F7EEE7] via-[#EED8CB] to-[#DAB39A]",
+    }
+  );
+}
+
+function ServiceImage({ service, visual, className = "", priority = false }) {
+  const [imageAvailable, setImageAvailable] = useState(true);
+
+  if (!imageAvailable) {
+    return (
+      <div className={`relative overflow-hidden bg-gradient-to-br ${visual.accent} ${className}`}>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.7),_transparent_40%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(74,25,66,0.06),transparent_48%,rgba(201,151,77,0.15))]" />
+        <div className="relative flex h-full w-full items-end p-5">
+          <div className="rounded-2xl bg-white/80 px-4 py-3 shadow-sm backdrop-blur-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#C9974D]">Professional Photo</p>
+            <p className="mt-1 text-lg text-[#4A1942] [font-family:var(--font-cormorant)]">{service.name}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative overflow-hidden bg-gradient-to-br ${visual.accent} ${className}`}>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.65),_transparent_40%)]" />
+      <Image
+        src={visual.src}
+        alt={visual.alt}
+        width={800}
+        height={600}
+        className="h-full w-full object-cover"
+        priority={priority}
+        onError={() => setImageAvailable(false)}
+      />
+    </div>
+  );
+}
+
 function WhatsAppIcon() {
   return (
     <svg viewBox="0 0 32 32" className="h-5 w-5 fill-current" aria-hidden="true">
@@ -53,10 +131,12 @@ function WhatsAppIcon() {
 
 function ServiceDetailsModal({ service, onClose, onBookService }) {
   if (!service) return null;
+  const visual = getServiceVisual(service);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-xl rounded-2xl border border-[#C9A84C]/50 bg-[#FDFAF5] p-6 shadow-2xl">
+        <ServiceImage service={service} visual={visual} className="mb-6 h-56 rounded-2xl" priority />
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.25em] text-[#C9A84C]">{service.category || "Service"}</p>
@@ -214,26 +294,38 @@ export default function LandingPageClient({ services = [] }) {
           </h2>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {serviceCards.map((service) => (
-              <button
-                key={service.id}
-                type="button"
-                onClick={() => handleServiceClick(service)}
-                className="rounded-2xl border border-[#C9A84C]/60 bg-white p-6 text-left shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-              >
-                <h3 className="text-2xl font-semibold text-[#4A1942] [font-family:var(--font-cormorant)]">
-                  {service.name}
-                </h3>
-                <p className="mt-3 text-sm text-[#2C2C2C]/80">{service.description}</p>
-                <div className="mt-5 flex items-center justify-between">
-                  <span className="rounded-full bg-[#F5ECD7] px-3 py-1 text-xs font-semibold text-[#4A1942]">
-                    {service.duration_minutes} mins
-                  </span>
-                  <p className="text-xl font-semibold text-[#C9A84C]">${service.price}</p>
-                </div>
-                <p className="mt-4 text-xs uppercase tracking-wider text-[#4A1942]/70">Tap for details</p>
-              </button>
-            ))}
+            {serviceCards.map((service) => {
+              const visual = getServiceVisual(service);
+
+              return (
+                <button
+                  key={service.id}
+                  type="button"
+                  onClick={() => handleServiceClick(service)}
+                  className="overflow-hidden rounded-2xl border border-[#C9A84C]/60 bg-white text-left shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <ServiceImage service={service} visual={visual} className="h-52" />
+                  <div className="p-6">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-2xl font-semibold text-[#4A1942] [font-family:var(--font-cormorant)]">
+                        {service.name}
+                      </h3>
+                      <span className="rounded-full bg-[#F5ECD7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#4A1942]">
+                        {service.category || "Salon"}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-[#2C2C2C]/80">{service.description}</p>
+                    <div className="mt-5 flex items-center justify-between">
+                      <span className="rounded-full bg-[#F5ECD7] px-3 py-1 text-xs font-semibold text-[#4A1942]">
+                        {service.duration_minutes} mins
+                      </span>
+                      <p className="text-xl font-semibold text-[#C9A84C]">${service.price}</p>
+                    </div>
+                    <p className="mt-4 text-xs uppercase tracking-wider text-[#4A1942]/70">Tap for details</p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
